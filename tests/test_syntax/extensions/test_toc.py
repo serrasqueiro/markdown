@@ -21,6 +21,7 @@ License: BSD (see LICENSE.md for details).
 
 from markdown.test_tools import TestCase
 from markdown.extensions.toc import TocExtension
+from markdown.extensions.nl2br import Nl2BrExtension
 
 
 class TestTOC(TestCase):
@@ -560,4 +561,54 @@ class TestTOC(TestCase):
                 '<a class="headerlink" href="#theatre" title="Permanent link">&para;</a>'  # noqa
             '</h1>',                                                                       # noqa
             extensions=[TocExtension(permalink=True)]
+        )
+
+    def testNl2brCompatibility(self):
+        self.assertMarkdownRenders(
+            '[TOC]\ntext',
+            '<p>[TOC]<br />\ntext</p>',
+            extensions=[TocExtension(), Nl2BrExtension()]
+        )
+
+    def testTOCWithCustomClass(self):
+
+        self.assertMarkdownRenders(
+            self.dedent(
+                '''
+                [TOC]
+                # Header
+                '''
+            ),
+            self.dedent(
+                '''
+                <div class="custom">
+                <ul>
+                <li><a href="#header">Header</a></li>
+                </ul>
+                </div>
+                <h1 id="header">Header</h1>
+                '''
+            ),
+            extensions=[TocExtension(toc_class="custom")]
+        )
+
+    def testTOCWithCustomClasses(self):
+        self.assertMarkdownRenders(
+            self.dedent(
+                '''
+                [TOC]
+                # Header
+                '''
+            ),
+            self.dedent(
+                '''
+                <div class="custom1 custom2">
+                <ul>
+                <li><a href="#header">Header</a></li>
+                </ul>
+                </div>
+                <h1 id="header">Header</h1>
+                '''
+            ),
+            extensions=[TocExtension(toc_class="custom1 custom2")]
         )

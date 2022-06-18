@@ -272,11 +272,11 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(len(r), 2)
         r.deregister('c', strict=False)
         self.assertEqual(len(r), 1)
-        # deregister non-existant item with strict=False
+        # deregister non-existent item with strict=False
         r.deregister('d', strict=False)
         self.assertEqual(len(r), 1)
         with self.assertRaises(ValueError):
-            # deregister non-existant item with strict=True
+            # deregister non-existent item with strict=True
             r.deregister('e')
         self.assertEqual(list(r), ['a'])
 
@@ -316,50 +316,16 @@ class RegistryTests(unittest.TestCase):
         r = markdown.util.Registry()
         with self.assertRaises(TypeError):
             r[0] = 'a'
-        # TODO: restore this when deprecated __setitem__ is removed.
-        # with self.assertRaises(TypeError):
-        #     r['a'] = 'a'
-        # TODO: remove this when deprecated __setitem__ is removed.
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            r['a'] = Item('a')
-            self.assertEqual(list(r), ['a'])
-            r['b'] = Item('b')
-            self.assertEqual(list(r), ['a', 'b'])
-            r['a'] = Item('a1')
-            self.assertEqual(list(r), ['a1', 'b'])
-
-            # Check the warnings
-            self.assertEqual(len(w), 3)
-            self.assertTrue(all(issubclass(x.category, DeprecationWarning) for x in w))
+        with self.assertRaises(TypeError):
+            r['a'] = 'a'
 
     def testRegistryDelItem(self):
         r = markdown.util.Registry()
         r.register(Item('a'), 'a', 20)
-        with self.assertRaises(KeyError):
+        with self.assertRaises(TypeError):
             del r[0]
-        # TODO: restore this when deprecated __del__ is removed.
-        # with self.assertRaises(TypeError):
-        #     del r['a']
-        # TODO: remove this when deprecated __del__ is removed.
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            r.register(Item('b'), 'b', 15)
-            r.register(Item('c'), 'c', 10)
-            del r['b']
-            self.assertEqual(list(r), ['a', 'c'])
+        with self.assertRaises(TypeError):
             del r['a']
-            self.assertEqual(list(r), ['c'])
-            with self.assertRaises(KeyError):
-                del r['badname']
-            del r['c']
-            self.assertEqual(list(r), [])
-
-            # Check the warnings
-            self.assertEqual(len(w), 3)
-            self.assertTrue(all(issubclass(x.category, DeprecationWarning) for x in w))
 
     def testRegistrySlice(self):
         r = markdown.util.Registry()
@@ -389,39 +355,6 @@ class RegistryTests(unittest.TestCase):
         r.register(Item('b2'), 'b', 30)
         self.assertEqual(len(r), 2)
         self.assertEqual(list(r), ['b2', 'a'])
-
-    def testRegistryDeprecatedAdd(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            r = markdown.util.Registry()
-            # Add first item
-            r.add('c', Item('c'), '_begin')
-            self.assertEqual(list(r), ['c'])
-            # Added to beginning
-            r.add('b', Item('b'), '_begin')
-            self.assertEqual(list(r), ['b', 'c'])
-            # Add before first item
-            r.add('a', Item('a'), '<b')
-            self.assertEqual(list(r), ['a', 'b', 'c'])
-            # Add before non-first item
-            r.add('a1', Item('a1'), '<b')
-            self.assertEqual(list(r), ['a', 'a1', 'b', 'c'])
-            # Add after non-last item
-            r.add('b1', Item('b1'), '>b')
-            self.assertEqual(list(r), ['a', 'a1', 'b', 'b1', 'c'])
-            # Add after last item
-            r.add('d', Item('d'), '>c')
-            self.assertEqual(list(r), ['a', 'a1', 'b', 'b1', 'c', 'd'])
-            # Add to end
-            r.add('e', Item('e'), '_end')
-            self.assertEqual(list(r), ['a', 'a1', 'b', 'b1', 'c', 'd', 'e'])
-            with self.assertRaises(ValueError):
-                r.add('f', Item('f'), 'badlocation')
-
-            # Check the warnings
-            self.assertEqual(len(w), 7)
-            self.assertTrue(all(issubclass(x.category, DeprecationWarning) for x in w))
 
 
 class TestErrors(unittest.TestCase):
@@ -455,7 +388,7 @@ class TestErrors(unittest.TestCase):
         self.assertRaises(TypeError, markdown.Markdown, extensions=[object])
 
     def testDotNotationExtensionWithBadClass(self):
-        """ Test Extension loading with non-existant class name (`path.to.module:Class`). """
+        """ Test Extension loading with non-existent class name (`path.to.module:Class`). """
         self.assertRaises(
             AttributeError,
             markdown.Markdown,
@@ -523,6 +456,43 @@ class testElementTailTests(unittest.TestCase):
         self.assertEqual(br.tail, None)
         self.pretty.run(root)
         self.assertEqual(br.tail, "\n")
+
+
+class testElementPreCodeTests(unittest.TestCase):
+    """ Element PreCode Tests """
+    def setUp(self):
+        md = markdown.Markdown()
+        self.pretty = markdown.treeprocessors.PrettifyTreeprocessor(md)
+
+    def prettify(self, xml):
+        root = etree.fromstring(xml)
+        self.pretty.run(root)
+        return etree.tostring(root, encoding="unicode", short_empty_elements=False)
+
+    def testPreCodeEmpty(self):
+        xml = "<pre><code></code></pre>"
+        expected = "<pre><code></code></pre>\n"
+        self.assertEqual(expected, self.prettify(xml))
+
+    def testPreCodeWithChildren(self):
+        xml = "<pre><code> <span /></code></pre>"
+        expected = "<pre><code> <span></span></code></pre>\n"
+        self.assertEqual(expected, self.prettify(xml))
+
+    def testPreCodeWithSpaceOnly(self):
+        xml = "<pre><code> </code></pre>"
+        expected = "<pre><code>\n</code></pre>\n"
+        self.assertEqual(expected, self.prettify(xml))
+
+    def testPreCodeWithText(self):
+        xml = "<pre><code> hello</code></pre>"
+        expected = "<pre><code> hello\n</code></pre>\n"
+        self.assertEqual(expected, self.prettify(xml))
+
+    def testPreCodeWithTrailingSpace(self):
+        xml = "<pre><code> hello </code></pre>"
+        expected = "<pre><code> hello\n</code></pre>\n"
+        self.assertEqual(expected, self.prettify(xml))
 
 
 class testSerializers(unittest.TestCase):
@@ -985,42 +955,3 @@ Some +test+ and a [+link+](http://test.com)
 
         self.md.reset()
         self.assertEqual(self.md.convert(test), result)
-
-
-class TestGeneralDeprecations(unittest.TestCase):
-    """Test general deprecations."""
-
-    def test_version_deprecation(self):
-        """Test that version is deprecated."""
-
-        with warnings.catch_warnings(record=True) as w:
-            # Cause all warnings to always be triggered.
-            warnings.simplefilter("always")
-            # Trigger a warning.
-            version = markdown.version
-            # Verify some things
-            self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[-1].category, DeprecationWarning))
-            self.assertEqual(version, markdown.__version__)
-
-    def test_version_info_deprecation(self):
-        """Test that version info is deprecated."""
-
-        with warnings.catch_warnings(record=True) as w:
-            # Cause all warnings to always be triggered.
-            warnings.simplefilter("always")
-            # Trigger a warning.
-            version_info = markdown.version_info
-            # Verify some things
-            self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[-1].category, DeprecationWarning))
-            self.assertEqual(version_info, markdown.__version_info__)
-
-    def test_deprecation_wrapper_dir(self):
-        """Tests the `__dir__` attribute of the class as it replaces the module's."""
-
-        dir_attr = dir(markdown)
-        self.assertNotIn('version', dir_attr)
-        self.assertIn('__version__', dir_attr)
-        self.assertNotIn('version_info', dir_attr)
-        self.assertIn('__version_info__', dir_attr)

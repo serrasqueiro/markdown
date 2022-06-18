@@ -75,12 +75,6 @@ class InlineProcessor(Treeprocessor):
         self.inlinePatterns = md.inlinePatterns
         self.ancestors = []
 
-    @property
-    @util.deprecated("Use 'md' instead.")
-    def markdown(self):
-        # TODO: remove this later
-        return self.md
-
     def __makePlaceholder(self, type):
         """ Generate a placeholder """
         id = "%04d" % len(self.stashed_nodes)
@@ -331,7 +325,7 @@ class InlineProcessor(Treeprocessor):
 
         Iterate over ElementTree, find elements with inline tag, apply inline
         patterns and append newly created Elements to tree.  If you don't
-        want to process your data with inline paterns, instead of normal
+        want to process your data with inline patterns, instead of normal
         string, use subclass AtomicString:
 
             node.text = markdown.AtomicString("This will not be processed.")
@@ -433,4 +427,7 @@ class PrettifyTreeprocessor(Treeprocessor):
         pres = root.iter('pre')
         for pre in pres:
             if len(pre) and pre[0].tag == 'code':
-                pre[0].text = util.AtomicString(pre[0].text.rstrip() + '\n')
+                code = pre[0]
+                # Only prettify code containing text only
+                if not len(code) and code.text is not None:
+                    code.text = util.AtomicString(code.text.rstrip() + '\n')

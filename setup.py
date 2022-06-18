@@ -49,7 +49,7 @@ dev_status_map = {
 DEVSTATUS = dev_status_map[__version_info__[3]]
 
 # The command line script name.  Currently set to "markdown_py" so as not to
-# conflict with the perl implimentation (which uses "markdown").
+# conflict with the perl implementation (which uses "markdown").
 SCRIPT_NAME = 'markdown_py'
 
 with open('README.md') as f:
@@ -59,7 +59,6 @@ setup(
     name='Markdown',
     version=__version__,
     url='https://Python-Markdown.github.io/',
-    download_url='http://pypi.python.org/packages/source/M/Markdown/Markdown-%s-py2.py3-none-any.whl' % __version__,
     project_urls={
         'Documentation': 'https://Python-Markdown.github.io/',
         'GitHub Project': 'https://github.com/Python-Markdown/markdown',
@@ -74,8 +73,8 @@ setup(
     maintainer_email='python.markdown@gmail.com',
     license='BSD License',
     packages=['markdown', 'markdown.extensions'],
-    python_requires='>=3.6',
-    install_requires=["importlib-metadata;python_version<'3.8'"],
+    python_requires='>=3.7',
+    install_requires=["importlib-metadata>=4.4;python_version<'3.10'"],
     extras_require={
         'testing': [
             'coverage',
@@ -114,10 +113,10 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
